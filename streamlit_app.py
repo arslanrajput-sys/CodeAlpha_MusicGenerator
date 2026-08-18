@@ -15,7 +15,21 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-BASE_DIR = Path(__file__).resolve().parent
+STYLE_OPTIONS = [
+    "classical",
+    "jazz",
+    "ambient",
+    "cinematic",
+    "ghazal darbari",
+]
+
+STYLE_LABELS = {
+    "classical": "Classical",
+    "jazz": "Jazz",
+    "ambient": "Ambient",
+    "cinematic": "Cinematic",
+    "ghazal darbari": "Ghazal — Raag Darbari",
+}
 
 st.markdown(
     """
@@ -128,14 +142,8 @@ st.markdown(
         box-shadow: none;
     }
 
-    [data-testid="stDownloadButton"] button:hover {
-        border-color: #454c57;
-        background: #22262e;
-        color: #ffffff;
-    }
-
     .empty-state {
-        min-height: 250px;
+        min-height: 245px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -169,7 +177,6 @@ st.markdown(
     .result-title {
         color: var(--text);
         font-size: 21px;
-        line-height: 1.2;
         font-weight: 700;
     }
 
@@ -254,8 +261,8 @@ with st.container(border=True):
     with c1:
         style = st.selectbox(
             "Style",
-            options=list(STYLE_CONFIG.keys()),
-            format_func=lambda x: x.title(),
+            options=STYLE_OPTIONS,
+            format_func=lambda x: STYLE_LABELS[x],
             index=0,
         )
 
@@ -306,14 +313,26 @@ with st.container(border=True):
             unsafe_allow_html=True,
         )
     else:
-        source_label = "LSTM + arrangement" if piece["source"] == "trained-lstm" else "Music engine"
+        if piece["source"] == "trained-lstm":
+            source_label = "LSTM + arrangement"
+        elif piece["source"] == "raga-engine":
+            source_label = "Darbari raga engine"
+        else:
+            source_label = "Music engine"
+
+        piece_label = STYLE_LABELS.get(piece["style"], piece["style"].title())
+        piece_sub = (
+            "Darbari melody · Sa–Pa drone · ghazal pulse"
+            if piece["style"] == "ghazal darbari"
+            else "Melody · harmony · bass"
+        )
 
         st.markdown(
             f"""
             <div class="result-top">
                 <div>
-                    <div class="result-title">{piece['style'].title()} composition</div>
-                    <div class="result-sub">Melody · harmony · bass</div>
+                    <div class="result-title">{piece_label}</div>
+                    <div class="result-sub">{piece_sub}</div>
                 </div>
                 <span class="badge">{source_label}</span>
             </div>
@@ -328,6 +347,8 @@ with st.container(border=True):
         )
 
         events_json = json.dumps(piece["events"])
+        is_darbari = "true" if piece["style"] == "ghazal darbari" else "false"
+
         player_html = f"""
         <!doctype html>
         <html>
@@ -398,6 +419,7 @@ with st.container(border=True):
             <script>
                 const events = {events_json};
                 const tempo = {piece['tempo']};
+                const isDarbari = {is_darbari};
                 const canvas = document.getElementById('roll');
                 const ctx = canvas.getContext('2d');
                 let audioCtx = null;
@@ -467,22 +489,22 @@ with st.container(border=True):
                     if (role === 'bass') {{
                         osc.type = 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = 720;
+                        filter.frequency.value = isDarbari ? 520 : 720;
                     }} else if (role === 'harmony') {{
                         osc.type = 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = 1900;
+                        filter.frequency.value = isDarbari ? 1400 : 1900;
                     }} else {{
-                        osc.type = 'triangle';
+                        osc.type = isDarbari ? 'sine' : 'triangle';
                         filter.type = 'lowpass';
-                        filter.frequency.value = 4200;
+                        filter.frequency.value = isDarbari ? 3000 : 4200;
                     }}
 
                     osc.frequency.value = midiToFreq(pitch);
 
                     const peak = (role === 'bass' ? 0.07 : role === 'harmony' ? 0.032 : 0.075) * velocity;
-                    const attack = role === 'harmony' ? 0.07 : 0.018;
-                    const release = role === 'harmony' ? 0.20 : 0.09;
+                    const attack = role === 'harmony' ? 0.07 : (isDarbari ? 0.035 : 0.018);
+                    const release = role === 'harmony' ? 0.20 : (isDarbari ? 0.16 : 0.09);
                     const sustainTime = Math.max(start + attack + 0.01, end - release);
 
                     gain.gain.setValueAtTime(0.0001, start);
@@ -505,7 +527,7 @@ with st.container(border=True):
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
                     const master = audioCtx.createGain();
-                    master.gain.value = 0.72;
+                    master.gain.value = isDarbari ? 0.78 : 0.72;
 
                     const compressor = audioCtx.createDynamicsCompressor();
                     compressor.threshold.value = -18;
@@ -514,10 +536,10 @@ with st.container(border=True):
                     compressor.attack.value = 0.01;
                     compressor.release.value = 0.18;
 
-                    const delay = audioCtx.createDelay(0.5);
-                    delay.delayTime.value = 0.14;
+                    const delay = audioCtx.createDelay(0.6);
+                    delay.delayTime.value = isDarbari ? 0.19 : 0.14;
                     const wet = audioCtx.createGain();
-                    wet.gain.value = 0.10;
+                    wet.gain.value = isDarbari ? 0.16 : 0.10;
 
                     delay.connect(wet);
                     wet.connect(master);
@@ -551,8 +573,6 @@ with st.container(border=True):
                 )
 
 st.markdown(
-    """
-    <div class="footer-note">CodeAlpha Task 3 · Python · music21 · LSTM · MIDI</div>
-    """,
+    '<div class="footer-note">CodeAlpha Task 3 · Python · music21 · LSTM · MIDI</div>',
     unsafe_allow_html=True,
 )
