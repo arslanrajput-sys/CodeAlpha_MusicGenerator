@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
 
-from music_engine import GENERATED_DIR, STYLE_CONFIG, generate_music
+from music_engine import GENERATED_DIR, generate_music
 
 st.set_page_config(
     page_title="MuseLab — Music Generator",
@@ -28,7 +27,7 @@ STYLE_LABELS = {
     "jazz": "Jazz",
     "ambient": "Ambient",
     "cinematic": "Cinematic",
-    "ghazal darbari": "Ghazal — Raag Darbari",
+    "ghazal darbari": "Indian Classical",
 }
 
 st.markdown(
@@ -285,7 +284,11 @@ with st.container(border=True):
         )
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    generate_clicked = st.button("Generate music", use_container_width=True, type="primary")
+    generate_clicked = st.button(
+        "Generate music",
+        use_container_width=True,
+        type="primary",
+    )
 
 if generate_clicked:
     with st.spinner("Generating arrangement..."):
@@ -306,7 +309,7 @@ with st.container(border=True):
             <div class="empty-state">
                 <div>
                     <strong>No composition yet</strong>
-                    <span>Choose a style and press Generate music. A complete arrangement will appear here.</span>
+                    <span>Choose a style and press Generate music. Your composition will appear here.</span>
                 </div>
             </div>
             """,
@@ -316,13 +319,13 @@ with st.container(border=True):
         if piece["source"] == "trained-lstm":
             source_label = "LSTM + arrangement"
         elif piece["source"] == "raga-engine":
-            source_label = "Darbari raga engine"
+            source_label = "Indian music engine"
         else:
             source_label = "Music engine"
 
         piece_label = STYLE_LABELS.get(piece["style"], piece["style"].title())
         piece_sub = (
-            "Darbari melody · Sa–Pa drone · ghazal pulse"
+            "Melody · drone · soft rhythm"
             if piece["style"] == "ghazal darbari"
             else "Melody · harmony · bass"
         )
@@ -347,7 +350,7 @@ with st.container(border=True):
         )
 
         events_json = json.dumps(piece["events"])
-        is_darbari = "true" if piece["style"] == "ghazal darbari" else "false"
+        is_indian = "true" if piece["style"] == "ghazal darbari" else "false"
 
         player_html = f"""
         <!doctype html>
@@ -356,54 +359,14 @@ with st.container(border=True):
         <meta charset="utf-8">
         <style>
             * {{ box-sizing: border-box; }}
-            body {{
-                margin: 0;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-                color: #f2f4f7;
-                background: transparent;
-            }}
-            .player {{
-                overflow: hidden;
-                border: 1px solid #2a2f38;
-                border-radius: 8px;
-                background: #111419;
-            }}
-            canvas {{
-                display: block;
-                width: 100%;
-                height: 190px;
-                background: #111419;
-            }}
-            .controls {{
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 10px;
-                border-top: 1px solid #2a2f38;
-                background: #171a20;
-            }}
-            button {{
-                border: 1px solid #363c46;
-                border-radius: 7px;
-                padding: 8px 14px;
-                background: #20242b;
-                color: #eef1f5;
-                cursor: pointer;
-                font: inherit;
-                font-size: 12px;
-                font-weight: 600;
-            }}
-            button.primary {{
-                border-color: #f2f4f7;
-                background: #f2f4f7;
-                color: #111318;
-            }}
-            .note {{
-                margin-left: auto;
-                color: #7f8793;
-                font-size: 11px;
-            }}
-            @media (max-width: 520px) {{ .note {{ display: none; }} }}
+            body {{ margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; background:transparent; color:#f2f4f7; }}
+            .player {{ overflow:hidden; border:1px solid #2a2f38; border-radius:8px; background:#111419; }}
+            canvas {{ display:block; width:100%; height:190px; background:#111419; }}
+            .controls {{ display:flex; align-items:center; gap:8px; padding:10px; border-top:1px solid #2a2f38; background:#171a20; }}
+            button {{ border:1px solid #363c46; border-radius:7px; padding:8px 14px; background:#20242b; color:#eef1f5; cursor:pointer; font:inherit; font-size:12px; font-weight:600; }}
+            button.primary {{ border-color:#f2f4f7; background:#f2f4f7; color:#111318; }}
+            .note {{ margin-left:auto; color:#7f8793; font-size:11px; }}
+            @media (max-width:520px) {{ .note {{ display:none; }} }}
         </style>
         </head>
         <body>
@@ -412,14 +375,14 @@ with st.container(border=True):
                 <div class="controls">
                     <button class="primary" onclick="playPiece()">Play</button>
                     <button onclick="stopPiece()">Stop</button>
-                    <span class="note">Layered browser preview</span>
+                    <span class="note">Browser preview</span>
                 </div>
             </div>
 
             <script>
                 const events = {events_json};
                 const tempo = {piece['tempo']};
-                const isDarbari = {is_darbari};
+                const isIndian = {is_indian};
                 const canvas = document.getElementById('roll');
                 const ctx = canvas.getContext('2d');
                 let audioCtx = null;
@@ -460,19 +423,12 @@ with st.container(border=True):
                     }});
                 }}
 
-                function midiToFreq(n) {{
-                    return 440 * Math.pow(2, (n - 69) / 12);
-                }}
+                function midiToFreq(n) {{ return 440 * Math.pow(2, (n - 69) / 12); }}
 
                 function stopPiece() {{
-                    active.forEach(node => {{
-                        try {{ node.stop(); }} catch (e) {{}}
-                    }});
+                    active.forEach(node => {{ try {{ node.stop(); }} catch (e) {{}} }});
                     active = [];
-                    if (audioCtx) {{
-                        audioCtx.close();
-                        audioCtx = null;
-                    }}
+                    if (audioCtx) {{ audioCtx.close(); audioCtx = null; }}
                 }}
 
                 function scheduleVoice(event, pitch, output) {{
@@ -481,7 +437,6 @@ with st.container(border=True):
                     const start = audioCtx.currentTime + 0.08 + event.start * beat;
                     const end = start + Math.max(0.08, event.duration * beat * 0.94);
                     const velocity = Math.max(0.45, Math.min(1.15, (event.velocity || 78) / 86));
-
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     const filter = audioCtx.createBiquadFilter();
@@ -489,22 +444,22 @@ with st.container(border=True):
                     if (role === 'bass') {{
                         osc.type = 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = isDarbari ? 520 : 720;
+                        filter.frequency.value = isIndian ? 520 : 720;
                     }} else if (role === 'harmony') {{
                         osc.type = 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = isDarbari ? 1400 : 1900;
+                        filter.frequency.value = isIndian ? 1400 : 1900;
                     }} else {{
-                        osc.type = isDarbari ? 'sine' : 'triangle';
+                        osc.type = isIndian ? 'sine' : 'triangle';
                         filter.type = 'lowpass';
-                        filter.frequency.value = isDarbari ? 3000 : 4200;
+                        filter.frequency.value = isIndian ? 3000 : 4200;
                     }}
 
                     osc.frequency.value = midiToFreq(pitch);
 
                     const peak = (role === 'bass' ? 0.07 : role === 'harmony' ? 0.032 : 0.075) * velocity;
-                    const attack = role === 'harmony' ? 0.07 : (isDarbari ? 0.035 : 0.018);
-                    const release = role === 'harmony' ? 0.20 : (isDarbari ? 0.16 : 0.09);
+                    const attack = role === 'harmony' ? 0.07 : (isIndian ? 0.035 : 0.018);
+                    const release = role === 'harmony' ? 0.20 : (isIndian ? 0.16 : 0.09);
                     const sustainTime = Math.max(start + attack + 0.01, end - release);
 
                     gain.gain.setValueAtTime(0.0001, start);
@@ -527,7 +482,7 @@ with st.container(border=True):
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
                     const master = audioCtx.createGain();
-                    master.gain.value = isDarbari ? 0.78 : 0.72;
+                    master.gain.value = isIndian ? 0.78 : 0.72;
 
                     const compressor = audioCtx.createDynamicsCompressor();
                     compressor.threshold.value = -18;
@@ -537,9 +492,9 @@ with st.container(border=True):
                     compressor.release.value = 0.18;
 
                     const delay = audioCtx.createDelay(0.6);
-                    delay.delayTime.value = isDarbari ? 0.19 : 0.14;
+                    delay.delayTime.value = isIndian ? 0.19 : 0.14;
                     const wet = audioCtx.createGain();
-                    wet.gain.value = isDarbari ? 0.16 : 0.10;
+                    wet.gain.value = isIndian ? 0.16 : 0.10;
 
                     delay.connect(wet);
                     wet.connect(master);
@@ -547,10 +502,7 @@ with st.container(border=True):
                     compressor.connect(audioCtx.destination);
 
                     const output = {{ master, delay }};
-
-                    events.forEach(event => {{
-                        event.pitches.forEach(pitch => scheduleVoice(event, pitch, output));
-                    }});
+                    events.forEach(event => event.pitches.forEach(pitch => scheduleVoice(event, pitch, output)));
                 }}
 
                 drawRoll();
@@ -563,10 +515,10 @@ with st.container(border=True):
 
         midi_path = GENERATED_DIR / piece["filename"]
         if midi_path.exists():
-            with midi_path.open("rb") as f:
+            with midi_path.open("rb") as file:
                 st.download_button(
                     "Download MIDI",
-                    data=f.read(),
+                    data=file.read(),
                     file_name=piece["filename"],
                     mime="audio/midi",
                     use_container_width=True,
