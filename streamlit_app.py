@@ -20,6 +20,7 @@ STYLE_OPTIONS = [
     "ambient",
     "cinematic",
     "ghazal darbari",
+    "fast guitar",
 ]
 
 STYLE_LABELS = {
@@ -28,6 +29,7 @@ STYLE_LABELS = {
     "ambient": "Ambient",
     "cinematic": "Cinematic",
     "ghazal darbari": "Indian Classical",
+    "fast guitar": "Fast Guitar",
 }
 
 st.markdown(
@@ -47,11 +49,7 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
     }
 
-    .stApp {
-        background: var(--bg);
-        color: var(--text);
-    }
-
+    .stApp { background: var(--bg); color: var(--text); }
     #MainMenu, footer, header { visibility: hidden; }
 
     .block-container {
@@ -320,15 +318,18 @@ with st.container(border=True):
             source_label = "LSTM + arrangement"
         elif piece["source"] == "raga-engine":
             source_label = "Indian music engine"
+        elif piece["source"] == "guitar-engine":
+            source_label = "Guitar engine"
         else:
             source_label = "Music engine"
 
         piece_label = STYLE_LABELS.get(piece["style"], piece["style"].title())
-        piece_sub = (
-            "Melody · drone · soft rhythm"
-            if piece["style"] == "ghazal darbari"
-            else "Melody · harmony · bass"
-        )
+        if piece["style"] == "ghazal darbari":
+            piece_sub = "Melody · drone · soft rhythm"
+        elif piece["style"] == "fast guitar":
+            piece_sub = "Lead guitar · power chords · driving bass"
+        else:
+            piece_sub = "Melody · harmony · bass"
 
         st.markdown(
             f"""
@@ -351,6 +352,7 @@ with st.container(border=True):
 
         events_json = json.dumps(piece["events"])
         is_indian = "true" if piece["style"] == "ghazal darbari" else "false"
+        is_guitar = "true" if piece["style"] == "fast guitar" else "false"
 
         player_html = f"""
         <!doctype html>
@@ -383,6 +385,7 @@ with st.container(border=True):
                 const events = {events_json};
                 const tempo = {piece['tempo']};
                 const isIndian = {is_indian};
+                const isGuitar = {is_guitar};
                 const canvas = document.getElementById('roll');
                 const ctx = canvas.getContext('2d');
                 let audioCtx = null;
@@ -390,8 +393,8 @@ with st.container(border=True):
 
                 function roleColor(role) {{
                     if (role === 'bass') return '#77829a';
-                    if (role === 'harmony') return '#68736d';
-                    return '#b8d2b0';
+                    if (role === 'harmony') return isGuitar ? '#9b8368' : '#68736d';
+                    return isGuitar ? '#d7b07a' : '#b8d2b0';
                 }}
 
                 function drawRoll() {{
@@ -425,6 +428,17 @@ with st.container(border=True):
 
                 function midiToFreq(n) {{ return 440 * Math.pow(2, (n - 69) / 12); }}
 
+                function makeDistortion(amount) {{
+                    const samples = 44100;
+                    const curve = new Float32Array(samples);
+                    const k = amount;
+                    for (let i = 0; i < samples; ++i) {{
+                        const x = i * 2 / samples - 1;
+                        curve[i] = (3 + k) * x * 20 * Math.PI / (Math.PI + k * Math.abs(x));
+                    }}
+                    return curve;
+                }}
+
                 function stopPiece() {{
                     active.forEach(node => {{ try {{ node.stop(); }} catch (e) {{}} }});
                     active = [];
@@ -435,42 +449,53 @@ with st.container(border=True):
                     const role = event.role || 'melody';
                     const beat = 60 / tempo;
                     const start = audioCtx.currentTime + 0.08 + event.start * beat;
-                    const end = start + Math.max(0.08, event.duration * beat * 0.94);
+                    const end = start + Math.max(0.06, event.duration * beat * (isGuitar ? 0.86 : 0.94));
                     const velocity = Math.max(0.45, Math.min(1.15, (event.velocity || 78) / 86));
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     const filter = audioCtx.createBiquadFilter();
 
                     if (role === 'bass') {{
-                        osc.type = 'sine';
+                        osc.type = isGuitar ? 'square' : 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = isIndian ? 520 : 720;
+                        filter.frequency.value = isIndian ? 520 : (isGuitar ? 950 : 720);
                     }} else if (role === 'harmony') {{
-                        osc.type = 'sine';
+                        osc.type = isGuitar ? 'sawtooth' : 'sine';
                         filter.type = 'lowpass';
-                        filter.frequency.value = isIndian ? 1400 : 1900;
+                        filter.frequency.value = isIndian ? 1400 : (isGuitar ? 3600 : 1900);
                     }} else {{
-                        osc.type = isIndian ? 'sine' : 'triangle';
+                        osc.type = isGuitar ? 'sawtooth' : (isIndian ? 'sine' : 'triangle');
                         filter.type = 'lowpass';
-                        filter.frequency.value = isIndian ? 3000 : 4200;
+                        filter.frequency.value = isIndian ? 3000 : (isGuitar ? 5200 : 4200);
                     }}
 
                     osc.frequency.value = midiToFreq(pitch);
 
-                    const peak = (role === 'bass' ? 0.07 : role === 'harmony' ? 0.032 : 0.075) * velocity;
-                    const attack = role === 'harmony' ? 0.07 : (isIndian ? 0.035 : 0.018);
-                    const release = role === 'harmony' ? 0.20 : (isIndian ? 0.16 : 0.09);
+                    let peak;
+                    if (isGuitar) {{
+                        peak = (role === 'bass' ? 0.050 : role === 'harmony' ? 0.026 : 0.044) * velocity;
+                    }} else {{
+                        peak = (role === 'bass' ? 0.07 : role === 'harmony' ? 0.032 : 0.075) * velocity;
+                    }}
+
+                    const attack = isGuitar ? 0.006 : (role === 'harmony' ? 0.07 : (isIndian ? 0.035 : 0.018));
+                    const release = isGuitar ? 0.055 : (role === 'harmony' ? 0.20 : (isIndian ? 0.16 : 0.09));
                     const sustainTime = Math.max(start + attack + 0.01, end - release);
 
                     gain.gain.setValueAtTime(0.0001, start);
                     gain.gain.exponentialRampToValueAtTime(Math.max(0.001, peak), start + attack);
-                    gain.gain.setValueAtTime(Math.max(0.001, peak * 0.72), sustainTime);
+                    gain.gain.setValueAtTime(Math.max(0.001, peak * (isGuitar ? 0.46 : 0.72)), sustainTime);
                     gain.gain.exponentialRampToValueAtTime(0.0001, end);
 
                     osc.connect(gain);
                     gain.connect(filter);
-                    filter.connect(output.master);
-                    if (role !== 'bass') filter.connect(output.delay);
+
+                    if (isGuitar && role !== 'bass') {{
+                        filter.connect(output.drive);
+                    }} else {{
+                        filter.connect(output.master);
+                    }}
+                    if (role === 'melody') filter.connect(output.delay);
 
                     osc.start(start);
                     osc.stop(end + 0.04);
@@ -482,26 +507,31 @@ with st.container(border=True):
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
                     const master = audioCtx.createGain();
-                    master.gain.value = isIndian ? 0.78 : 0.72;
+                    master.gain.value = isIndian ? 0.78 : (isGuitar ? 0.62 : 0.72);
 
                     const compressor = audioCtx.createDynamicsCompressor();
-                    compressor.threshold.value = -18;
+                    compressor.threshold.value = isGuitar ? -24 : -18;
                     compressor.knee.value = 18;
-                    compressor.ratio.value = 4;
+                    compressor.ratio.value = isGuitar ? 6 : 4;
                     compressor.attack.value = 0.01;
                     compressor.release.value = 0.18;
 
                     const delay = audioCtx.createDelay(0.6);
-                    delay.delayTime.value = isIndian ? 0.19 : 0.14;
+                    delay.delayTime.value = isIndian ? 0.19 : (isGuitar ? 0.095 : 0.14);
                     const wet = audioCtx.createGain();
-                    wet.gain.value = isIndian ? 0.16 : 0.10;
+                    wet.gain.value = isIndian ? 0.16 : (isGuitar ? 0.07 : 0.10);
+
+                    const drive = audioCtx.createWaveShaper();
+                    drive.curve = makeDistortion(isGuitar ? 18 : 1);
+                    drive.oversample = '4x';
+                    drive.connect(master);
 
                     delay.connect(wet);
                     wet.connect(master);
                     master.connect(compressor);
                     compressor.connect(audioCtx.destination);
 
-                    const output = {{ master, delay }};
+                    const output = {{ master, delay, drive }};
                     events.forEach(event => event.pitches.forEach(pitch => scheduleVoice(event, pitch, output)));
                 }}
 
