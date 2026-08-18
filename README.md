@@ -1,141 +1,126 @@
-# Melody Lab — AI Music Generator
+# MuseLab — AI Music Generator
 
-A complete CodeAlpha Task 3 project for generating MIDI music with a recurrent neural network. The project includes MIDI preprocessing with `music21`, an LSTM training pipeline with TensorFlow/Keras, MIDI generation, a Flask API, browser playback using Web Audio, a piano-roll style visualizer, and a clean responsive interface.
+A CodeAlpha Task 3 project for MIDI music generation with Python, `music21`, an LSTM training pipeline, and a clean Streamlit interface.
 
-## What the project covers
+## Live deployment
 
-- Collect MIDI files for training
-- Parse notes and chords with `music21`
-- Convert music into fixed-length numerical sequences
-- Train a stacked LSTM network to predict the next musical event
-- Generate new note/chord sequences from a trained model
-- Convert predictions back to `.mid`
-- Preview generated music in the browser
-- Download generated MIDI files
-- Use a built-in demo composition engine before a trained model is available
+The repository is prepared for **Streamlit Community Cloud**.
+
+Use these values on the deployment screen:
+
+```text
+Repository: arslanrajput-sys/CodeAlpha_MusicGenerator
+Branch: main
+Main file path: streamlit_app.py
+```
+
+No API key or environment variable is required.
+
+## What the project includes
+
+- MIDI parsing and preprocessing with `music21`
+- Notes/chords converted into numerical training sequences
+- Stacked LSTM model in TensorFlow/Keras
+- Local model training workflow
+- MIDI sequence generation
+- Four composition styles: Classical, Jazz, Ambient and Cinematic
+- Adjustable sequence length and creativity
+- Browser Web Audio preview
+- Piano-roll visualization
+- Downloadable `.mid` output
+- Responsive Streamlit frontend
+- Lightweight hosted runtime with no TensorFlow install required
+
+## Why TensorFlow is not in `requirements.txt`
+
+TensorFlow is the large training dependency. Installing it on every hosted app build makes deployment much slower and heavier.
+
+The project therefore separates its dependencies:
+
+```text
+requirements.txt           # lightweight Streamlit deployment
+requirements-training.txt  # TensorFlow/Keras local training
+```
+
+The deployed app works immediately with the built-in composition engine. If trained model files are included in an environment that has TensorFlow available, `music_engine.py` can load and use them automatically.
 
 ## Project structure
 
 ```text
 CodeAlpha_MusicGenerator/
-├── app.py                    # Flask web app and API
-├── music_engine.py           # Model inference, demo generation and MIDI export
-├── preprocess.py             # MIDI -> note/chord token dataset
-├── train.py                  # LSTM model training
-├── requirements.txt
-├── templates/
-│   └── index.html
-├── static/
-│   ├── styles.css
-│   └── script.js
+├── streamlit_app.py            # Streamlit Community Cloud entry point
+├── music_engine.py             # generation + MIDI export
+├── preprocess.py               # MIDI -> training tokens
+├── train.py                    # stacked LSTM training
+├── app.py                      # original Flask implementation
+├── requirements.txt            # hosted runtime
+├── requirements-training.txt   # local model training
+├── .streamlit/
+│   └── config.toml             # Streamlit theme
 ├── data/
-│   ├── midi/                 # Put training MIDI files here
-│   └── processed/            # Generated preprocessing output
-├── models/                   # Trained model + vocabulary files
-└── generated/                # Generated MIDI outputs
+│   ├── midi/
+│   └── processed/
+├── models/
+└── generated/
 ```
 
-## Quick start
-
-### 1. Clone and create a virtual environment
+## Run the Streamlit app locally
 
 ```bash
-git clone https://github.com/arslanrajput-sys/CodeAlpha_MusicGenerator.git
-cd CodeAlpha_MusicGenerator
 python -m venv .venv
 ```
 
-Activate it:
-
-**Windows**
+Windows:
 
 ```bash
 .venv\Scripts\activate
 ```
 
-**macOS / Linux**
+macOS/Linux:
 
 ```bash
 source .venv/bin/activate
 ```
 
-### 2. Install dependencies
+Install the hosted runtime dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the web app immediately
+Run:
 
 ```bash
-python app.py
+streamlit run streamlit_app.py
 ```
 
-Open `http://127.0.0.1:5000`.
+## Train the LSTM locally
 
-The interface works before training by using the built-in demo engine. Once a trained model exists, the API automatically switches to LSTM inference.
+For training, use Python 3.11 and install the training dependencies:
 
-## Train the LSTM on MIDI files
+```bash
+pip install -r requirements-training.txt
+```
 
-### Step 1 — Add a dataset
-
-Create a collection of MIDI files and place them inside:
+Place MIDI training files in:
 
 ```text
 data/midi/
 ```
 
-A focused collection generally produces more consistent output than mixing unrelated styles. Piano/classical MIDI is a good starting point for this project.
-
-Only use MIDI files you are allowed to use for training.
-
-### Step 2 — Preprocess
+Preprocess them:
 
 ```bash
 python preprocess.py
 ```
 
-This creates:
-
-```text
-data/processed/songs.json
-```
-
-Each note is represented by its MIDI pitch plus duration. Chords are stored as multiple MIDI pitches. Example tokens:
-
-```text
-60|0.5
-64|0.5
-60.64.67|1.0
-```
-
-### Step 3 — Train
+Train the model:
 
 ```bash
 python train.py
 ```
 
-The network uses:
-
-```text
-64-event input sequence
-        ↓
-LSTM 256
-        ↓
-Dropout
-        ↓
-LSTM 256
-        ↓
-Batch Normalization
-        ↓
-LSTM 128
-        ↓
-Dense 128
-        ↓
-Softmax over musical-event vocabulary
-```
-
-Training produces:
+Training creates:
 
 ```text
 models/music_model.keras
@@ -143,72 +128,36 @@ models/vocab.json
 models/seed_sequences.json
 ```
 
-Restart `app.py` after training. The header will report **LSTM model ready**, and generated compositions will use the trained network.
+## Model architecture
 
-## Generation controls
-
-- **Style** — changes presentation, tempo and fallback composition character
-- **Length** — controls number of generated musical events
-- **Variation** — used as temperature during LSTM sampling
-- **Play** — previews the MIDI sequence with the browser Web Audio API
-- **Download MIDI** — saves the generated composition as a standard MIDI file
-
-## API
-
-### Health
-
-```http
-GET /api/health
+```text
+64-event sequence
+      ↓
+LSTM 256
+      ↓
+Dropout
+      ↓
+LSTM 256
+      ↓
+Batch Normalization
+      ↓
+LSTM 128
+      ↓
+Dense 128
+      ↓
+Softmax prediction
 ```
-
-### Generate
-
-```http
-POST /api/generate
-Content-Type: application/json
-```
-
-Example body:
-
-```json
-{
-  "style": "classical",
-  "length": 96,
-  "creativity": 0.9
-}
-```
-
-The response contains note events for browser playback plus a URL for the generated MIDI file.
-
-## Recommended training settings
-
-Start with at least 50–100 MIDI pieces from a reasonably consistent style. More clean training data usually matters more than increasing network size. On a CPU, begin with a smaller dataset to validate the pipeline; a GPU is recommended for larger training runs.
-
-The default script trains for up to 60 epochs and includes early stopping and best-model checkpointing.
-
-## Technologies
-
-- Python
-- Flask
-- TensorFlow / Keras
-- LSTM recurrent neural network
-- music21
-- NumPy
-- HTML / CSS / JavaScript
-- Web Audio API
-- Canvas visualization
 
 ## CodeAlpha Task 3 mapping
 
 | Requirement | Implementation |
 | --- | --- |
-| Collect MIDI music data | `data/midi/` dataset folder |
-| Preprocess data into note sequences | `preprocess.py` + `music21` |
-| Build deep learning model | Stacked LSTM in `train.py` |
-| Train to generate music | `train.py` |
-| Convert output to MIDI | `music_engine.py` |
-| Play or save generated output | Browser player + MIDI download |
+| Collect MIDI music data | `data/midi/` |
+| Preprocess MIDI into note sequences | `preprocess.py` + `music21` |
+| Build a deep-learning model | stacked LSTM in `train.py` |
+| Train on the dataset | `train.py` |
+| Generate new music sequences | `music_engine.py` |
+| Convert output to MIDI | `music21` MIDI writer |
+| Play or save the result | Web Audio preview + MIDI download |
 
-## Notes
-
-Generated model files, training MIDI files and output MIDI files are excluded from Git by default because they may be large. The source repository stays lightweight while the full training workflow remains reproducible.
+Only use MIDI files you have permission to use for training.
