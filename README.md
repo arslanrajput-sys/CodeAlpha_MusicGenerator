@@ -1,163 +1,54 @@
-# MuseLab — AI Music Generator
+# MuseLab — Music Generator
 
-A CodeAlpha Task 3 project for MIDI music generation with Python, `music21`, an LSTM training pipeline, and a clean Streamlit interface.
+MuseLab is a simple music generation app that creates original instrumental compositions in different styles. Choose a style, adjust the length and variation, generate a track, listen to it in the browser, and download the result as a MIDI file.
 
-## Live deployment
+## Live App
 
-The repository is prepared for **Streamlit Community Cloud**.
+**[Open MuseLab](https://codealphamusicgenerator.streamlit.app/)**
 
-Use these values on the deployment screen:
+## What You Can Do
 
-```text
-Repository: arslanrajput-sys/CodeAlpha_MusicGenerator
-Branch: main
-Main file path: streamlit_app.py
-```
+- Generate a new instrumental composition in seconds
+- Choose from multiple music styles
+- Adjust the length of the composition
+- Control how much variation is used
+- Preview the generated music directly in the app
+- View the notes through a visual music roll
+- Download the finished composition as a MIDI file
 
-No API key or environment variable is required.
+## Music Styles
 
-## What the project includes
+### Classical
+Balanced melodic compositions with smooth harmony and a traditional instrumental feel.
 
-- MIDI parsing and preprocessing with `music21`
-- Notes/chords converted into numerical training sequences
-- Stacked LSTM model in TensorFlow/Keras
-- Local model training workflow
-- MIDI sequence generation
-- Four composition styles: Classical, Jazz, Ambient and Cinematic
-- Adjustable sequence length and creativity
-- Browser Web Audio preview
-- Piano-roll visualization
-- Downloadable `.mid` output
-- Responsive Streamlit frontend
-- Lightweight hosted runtime with no TensorFlow install required
+### Jazz
+Lively melodies, richer harmony, and a more rhythmic musical character.
 
-## Why TensorFlow is not in `requirements.txt`
+### Ambient
+Soft, spacious compositions designed for a calm and relaxed sound.
 
-TensorFlow is the large training dependency. Installing it on every hosted app build makes deployment much slower and heavier.
+### Cinematic
+Dramatic, emotional music with a larger and more powerful feel.
 
-The project therefore separates its dependencies:
+### Indian Classical
+A melodic Indian-inspired style with a gentle drone, expressive note movement, and a traditional mood.
 
-```text
-requirements.txt           # lightweight Streamlit deployment
-requirements-training.txt  # TensorFlow/Keras local training
-```
+### Fast Guitar
+Fast, energetic guitar-focused music with driving riffs, lead phrases, and a stronger rhythm.
 
-The deployed app works immediately with the built-in composition engine. If trained model files are included in an environment that has TensorFlow available, `music_engine.py` can load and use them automatically.
+## How to Use
 
-## Project structure
+1. Select a music style.
+2. Choose the composition length.
+3. Set the variation level.
+4. Click **Generate music**.
+5. Press **Play** to preview the composition.
+6. Download the MIDI file if you want to keep it.
 
-```text
-CodeAlpha_MusicGenerator/
-├── streamlit_app.py            # Streamlit Community Cloud entry point
-├── music_engine.py             # generation + MIDI export
-├── preprocess.py               # MIDI -> training tokens
-├── train.py                    # stacked LSTM training
-├── app.py                      # original Flask implementation
-├── requirements.txt            # hosted runtime
-├── requirements-training.txt   # local model training
-├── .streamlit/
-│   └── config.toml             # Streamlit theme
-├── data/
-│   ├── midi/
-│   └── processed/
-├── models/
-└── generated/
-```
+## About the Project
 
-## Run the Streamlit app locally
+MuseLab was created for **CodeAlpha Task 3 — Music Generation with AI**. The goal of the project is to provide an easy and enjoyable way to generate new musical ideas through a clean, simple interface.
 
-```bash
-python -m venv .venv
-```
+---
 
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Install the hosted runtime dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-## Train the LSTM locally
-
-For training, use Python 3.11 and install the training dependencies:
-
-```bash
-pip install -r requirements-training.txt
-```
-
-Place MIDI training files in:
-
-```text
-data/midi/
-```
-
-Preprocess them:
-
-```bash
-python preprocess.py
-```
-
-Train the model:
-
-```bash
-python train.py
-```
-
-Training creates:
-
-```text
-models/music_model.keras
-models/vocab.json
-models/seed_sequences.json
-```
-
-## Model architecture
-
-```text
-64-event sequence
-      ↓
-LSTM 256
-      ↓
-Dropout
-      ↓
-LSTM 256
-      ↓
-Batch Normalization
-      ↓
-LSTM 128
-      ↓
-Dense 128
-      ↓
-Softmax prediction
-```
-
-## CodeAlpha Task 3 mapping
-
-| Requirement | Implementation |
-| --- | --- |
-| Collect MIDI music data | `data/midi/` |
-| Preprocess MIDI into note sequences | `preprocess.py` + `music21` |
-| Build a deep-learning model | stacked LSTM in `train.py` |
-| Train on the dataset | `train.py` |
-| Generate new music sequences | `music_engine.py` |
-| Convert output to MIDI | `music21` MIDI writer |
-| Play or save the result | Web Audio preview + MIDI download |
-
-Only use MIDI files you have permission to use for training.
+**Live App:** https://codealphamusicgenerator.streamlit.app/
