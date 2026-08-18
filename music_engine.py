@@ -74,17 +74,22 @@ STYLE_CONFIG = {
         ],
     },
     "ghazal darbari": {
-        # Darbari Kanada uses the Asavari-note collection:
-        # Sa Re komal-ga Ma Pa komal-dha komal-ni.
         "scale": MINOR_SCALE,
         "tempo": 98,
         "tempo_range": (94, 104),
         "tonics": [(60, "C"), (62, "D")],
-        # The dedicated Darbari generator below uses phrase grammar rather
-        # than Western chord progressions.
         "progression": [0],
         "contour": [0, 1, 2, 1, 0, -1, 0, 1],
         "melody_rhythms": [[0.5] * 8],
+    },
+    "fast guitar": {
+        "scale": MINOR_SCALE,
+        "tempo": 164,
+        "tempo_range": (154, 174),
+        "tonics": [(52, "E minor"), (57, "A minor")],
+        "progression": [0, 5, 2, 6],
+        "contour": [0, 2, 3, 4, 2, 1, 0, -1],
+        "melody_rhythms": [[0.25] * 16],
     },
 }
 
@@ -254,7 +259,7 @@ def _add_harmony_and_bass(
         root = _scale_pitch(tonic, scale, root_degree, octave_shift=-2)
         _add_event(events, [root], bar_start, 3.7, "bass", 54)
 
-    else:  # cinematic
+    else:
         chord_p = _chord_pitches(tonic, scale, root_degree, register=-1)
         widened = [chord_p[0], chord_p[1], chord_p[2], chord_p[0] + 12]
         _add_event(events, widened, bar_start, 3.7, "harmony", 64)
@@ -307,7 +312,6 @@ def _add_melody_bar(
                 k=1,
             )[0]
             target_degree = current_degree + step
-
             if random.random() < min(0.38, max(0.08, creativity * 0.18)):
                 target_degree += random.choice([-1, 1])
 
@@ -364,15 +368,11 @@ def _inject_model_influence(
 
     influence = min(0.42, max(0.14, creativity * 0.22))
     model_index = 0
-
-    allowed = []
-    for degree in range(4, 22):
-        allowed.append(_scale_pitch(tonic, scale, degree))
+    allowed = [_scale_pitch(tonic, scale, degree) for degree in range(4, 22)]
 
     for event in melody_events:
         if random.random() > influence:
             continue
-
         pitches, _duration = model_events[model_index % len(model_events)]
         model_index += 1
         if not pitches:
@@ -383,19 +383,10 @@ def _inject_model_influence(
             source_pitch += 12
         while source_pitch > 88:
             source_pitch -= 12
-
-        fitted = min(allowed, key=lambda p: abs(p - source_pitch))
-        event["pitches"] = [fitted]
+        event["pitches"] = [min(allowed, key=lambda p: abs(p - source_pitch))]
 
 
 def _generate_darbari_arrangement(length: int, creativity: float):
-    """
-    Ghazal-inspired Raag Darbari Kanada arrangement.
-
-    This deliberately avoids Western chord changes. It uses a Sa-Pa drone,
-    restrained low-register bass support, and Darbari-shaped melodic phrases
-    around komal ga / komal dha / komal ni.
-    """
     cfg = STYLE_CONFIG["ghazal darbari"]
     scale = cfg["scale"]
     tonic, tonic_name = random.choice(cfg["tonics"])
@@ -403,122 +394,146 @@ def _generate_darbari_arrangement(length: int, creativity: float):
     bars = max(8, min(28, int(round(length / 6))))
     events: List[dict] = []
 
-    # Degree numbers are relative to the Darbari scale:
-    # 0=S, 1=R, 2=g, 3=M, 4=P, 5=d, 6=n, 7=S'.
     phrases = [
-        [7, 8, 9, 8, 7, 6, 7, 8],          # S R g R S n S R
-        [7, 8, 9, 10, 11, 10, 9, 8],       # S R g M P M g R
-        [11, 13, 11, 10, 11, 9, 10, 8],    # P n P M P g M R
-        [14, 12, 13, 11, 10, 11, 9, 8],    # S' d n P M P g R
-        [8, 9, 10, 11, 13, 11, 10, 9],     # R g M P n P M g
-        [6, 7, 8, 9, 8, 7, 6, 7],          # n S R g R S n S
-        [7, 8, 9, 10, 11, 12, 13, 14],     # measured ascent
-        [14, 12, 13, 11, 10, 11, 9, 10],   # vakra descent
+        [7, 8, 9, 8, 7, 6, 7, 8],
+        [7, 8, 9, 10, 11, 10, 9, 8],
+        [11, 13, 11, 10, 11, 9, 10, 8],
+        [14, 12, 13, 11, 10, 11, 9, 8],
+        [8, 9, 10, 11, 13, 11, 10, 9],
+        [6, 7, 8, 9, 8, 7, 6, 7],
+        [7, 8, 9, 10, 11, 12, 13, 14],
+        [14, 12, 13, 11, 10, 11, 9, 10],
     ]
     rhythms = [
         [0.5] * 8,
         [0.75, 0.25, 0.5, 0.5, 0.75, 0.25, 0.5, 0.5],
         [0.5, 0.5, 0.75, 0.25, 0.5, 0.5, 0.5, 0.5],
     ]
-
     phrase_order = [0, 1, 2, 0, 4, 3, 2, 5]
 
     for bar_index in range(bars):
         bar_start = bar_index * 4.0
+        _add_event(events, [tonic - 12, tonic - 5, tonic], bar_start, 3.92, "harmony", 45 if bar_index % 2 else 49)
 
-        # Sa-Pa drone: the harmonic bed used instead of chord progressions.
-        drone_low_sa = tonic - 12
-        drone_pa = tonic - 5
-        _add_event(
-            events,
-            [drone_low_sa, drone_pa, tonic],
-            bar_start,
-            3.92,
-            "harmony",
-            45 if bar_index % 2 else 49,
-        )
-
-        # A restrained pulse underneath the melody. It reads like a soft
-        # ghazal accompaniment in the browser synth without introducing
-        # out-of-raga harmony.
-        low_sa = tonic - 24
-        low_pa = tonic - 17
         pulse_positions = [0.0, 1.5, 2.0, 3.5]
-        pulse_notes = [low_sa, low_pa, low_sa, low_pa]
+        pulse_notes = [tonic - 24, tonic - 17, tonic - 24, tonic - 17]
         for i, (pos, pitch) in enumerate(zip(pulse_positions, pulse_notes)):
-            _add_event(
-                events,
-                [pitch],
-                bar_start + pos,
-                0.34 if i in {1, 3} else 0.48,
-                "bass",
-                59 if i == 0 else 51,
-            )
+            _add_event(events, [pitch], bar_start + pos, 0.34 if i in {1, 3} else 0.48, "bass", 59 if i == 0 else 51)
 
         phrase_index = phrase_order[bar_index % len(phrase_order)]
         if creativity > 1.15 and random.random() < 0.30:
             phrase_index = random.randrange(len(phrases))
         phrase = list(phrases[phrase_index])
-
-        # Keep the final cadence unmistakably on Sa.
         if bar_index == bars - 1:
             phrase = [11, 9, 10, 8, 7, 8, 7, 7]
 
         rhythm = random.choice(rhythms)
         cursor = 0.0
-
         for note_index, (degree, duration) in enumerate(zip(phrase, rhythm)):
-            # Small controlled phrase variation without leaving the raga.
-            if (
-                creativity > 0.9
-                and 0 < note_index < len(phrase) - 1
-                and random.random() < min(0.18, (creativity - 0.75) * 0.18)
-            ):
-                shift = random.choice([-1, 1])
-                candidate = degree + shift
+            if creativity > 0.9 and 0 < note_index < len(phrase) - 1 and random.random() < min(0.18, (creativity - 0.75) * 0.18):
+                candidate = degree + random.choice([-1, 1])
                 if 5 <= candidate <= 15:
                     degree = candidate
 
             pitch = _scale_pitch(tonic, scale, degree)
-
-            # Komal ga and dha get slightly more space/weight. Real Darbari
-            # uses meend/andolan; MIDI cannot reproduce that nuance perfectly,
-            # so the phrase grammar and sustained treatment carry the effect.
             scale_index = degree % 7
             emphasis = 5 if scale_index in {2, 5} else 0
             velocity = 78 + emphasis + random.randint(-4, 5)
-
-            _add_event(
-                events,
-                [pitch],
-                bar_start + cursor,
-                max(0.22, duration * (0.94 if scale_index in {2, 5} else 0.88)),
-                "melody",
-                velocity,
-            )
+            _add_event(events, [pitch], bar_start + cursor, max(0.22, duration * (0.94 if scale_index in {2, 5} else 0.88)), "melody", velocity)
             cursor += duration
 
-        # Every fourth bar adds a soft response phrase around Pa-n-P-M-P-g.
         if bar_index % 4 == 3 and bar_index != bars - 1:
             response = [11, 13, 11, 10, 11, 9]
             response_start = bar_start + 2.0
             for i, degree in enumerate(response):
-                _add_event(
-                    events,
-                    [_scale_pitch(tonic, scale, degree)],
-                    response_start + (i * 0.31),
-                    0.25,
-                    "melody",
-                    62 + (3 if degree % 7 == 2 else 0),
-                )
+                _add_event(events, [_scale_pitch(tonic, scale, degree)], response_start + (i * 0.31), 0.25, "melody", 62 + (3 if degree % 7 == 2 else 0))
 
     events.sort(key=lambda event: (event["start"], event["role"]))
-    return events, tempo, bars, f"{tonic_name} · Raag Darbari", "raga-engine"
+    return events, tempo, bars, f"{tonic_name} · Indian Classical", "raga-engine"
+
+
+def _generate_fast_guitar_arrangement(length: int, creativity: float):
+    cfg = STYLE_CONFIG["fast guitar"]
+    scale = cfg["scale"]
+    tonic, key_name = random.choice(cfg["tonics"])
+    tempo = random.randint(*cfg["tempo_range"])
+    bars = max(8, min(24, int(round(length / 6))))
+    events: List[dict] = []
+
+    progression = cfg["progression"]
+    lead_degrees = [7, 9, 10, 11, 13, 14, 16, 17, 18, 20]
+    lead_patterns = [
+        [7, 9, 10, 11, 10, 9, 7, 9],
+        [11, 13, 14, 13, 11, 10, 9, 7],
+        [14, 13, 11, 10, 11, 13, 14, 16],
+        [9, 10, 11, 13, 11, 10, 9, 7],
+        [14, 16, 17, 16, 14, 13, 11, 10],
+    ]
+    rhythm_patterns = [
+        [0, 1, 2, 4, 5, 6, 7],
+        [0, 1, 3, 4, 5, 7],
+        [0, 2, 3, 4, 6, 7],
+        [0, 1, 2, 3, 5, 6, 7],
+    ]
+
+    for bar_index in range(bars):
+        root_degree = progression[bar_index % len(progression)]
+        next_degree = progression[(bar_index + 1) % len(progression)]
+        bar_start = bar_index * 4.0
+
+        root = _scale_pitch(tonic, scale, root_degree)
+        fifth = root + 7
+        octave = root + 12
+        riff_steps = random.choice(rhythm_patterns)
+
+        for step in riff_steps:
+            start = bar_start + step * 0.5
+            accent = step in {0, 4}
+            if step in {2, 6} and bar_index % 4 == 3:
+                pass_root = _scale_pitch(tonic, scale, next_degree)
+                pitches = [pass_root, pass_root + 7, pass_root + 12]
+            else:
+                pitches = [root, fifth, octave]
+            _add_event(events, pitches, start, 0.44 if accent else 0.31, "harmony", 92 if accent else 80 + random.randint(-3, 4))
+
+        for step in range(8):
+            bass_pitch = root - 12 if step not in {3, 7} else fifth - 12
+            _add_event(events, [bass_pitch], bar_start + step * 0.5, 0.38, "bass", 82 if step in {0, 4} else 70)
+
+        phrase = list(lead_patterns[bar_index % len(lead_patterns)])
+        if creativity > 1.0 and random.random() < 0.35:
+            phrase = random.choice(lead_patterns).copy()
+        if bar_index % 4 == 3:
+            phrase[-2:] = [16, 14]
+        if bar_index == bars - 1:
+            phrase = [14, 13, 11, 10, 9, 7, 7, 7]
+
+        for i, degree in enumerate(phrase):
+            if creativity > 1.1 and i not in {0, len(phrase) - 1} and random.random() < 0.15:
+                nearby = [d for d in lead_degrees if abs(d - degree) <= 2]
+                if nearby:
+                    degree = random.choice(nearby)
+            pitch = _scale_pitch(tonic, scale, degree)
+            duration = 0.42 if i % 4 == 0 else 0.30
+            if i == len(phrase) - 1 and bar_index == bars - 1:
+                duration = 0.95
+            _add_event(events, [pitch], bar_start + i * 0.5, duration, "melody", 94 if i in {0, 4} else 84 + random.randint(-4, 5))
+
+        if bar_index % 4 == 2 and bar_index != bars - 1:
+            fill = [14, 16, 17, 18, 17, 16, 14, 13]
+            fill_start = bar_start + 2.0
+            for i, degree in enumerate(fill):
+                _add_event(events, [_scale_pitch(tonic, scale, degree)], fill_start + i * 0.25, 0.19, "melody", 88 + (6 if i in {0, 4} else 0))
+
+    events.sort(key=lambda event: (event["start"], event["role"]))
+    return events, tempo, bars, key_name, "guitar-engine"
 
 
 def _generate_arrangement(style: str, length: int, creativity: float):
     if style == "ghazal darbari":
         return _generate_darbari_arrangement(length, creativity)
+    if style == "fast guitar":
+        return _generate_fast_guitar_arrangement(length, creativity)
 
     cfg = STYLE_CONFIG[style]
     scale = cfg["scale"]
@@ -535,29 +550,8 @@ def _generate_arrangement(style: str, length: int, creativity: float):
         next_root_degree = progression[(bar_index + 1) % len(progression)]
         bar_start = bar_index * 4.0
 
-        _add_harmony_and_bass(
-            events,
-            style,
-            tonic,
-            scale,
-            root_degree,
-            next_root_degree,
-            bar_start,
-        )
-
-        current_degree = _add_melody_bar(
-            events,
-            cfg,
-            style,
-            tonic,
-            scale,
-            root_degree,
-            bar_index,
-            bar_start,
-            current_degree,
-            creativity,
-            final_bar=bar_index == bars - 1,
-        )
+        _add_harmony_and_bass(events, style, tonic, scale, root_degree, next_root_degree, bar_start)
+        current_degree = _add_melody_bar(events, cfg, style, tonic, scale, root_degree, bar_index, bar_start, current_degree, creativity, final_bar=bar_index == bars - 1)
 
     model_events = _model_generate(max(32, bars * 4), creativity)
     source = "arrangement-engine"
@@ -569,13 +563,22 @@ def _generate_arrangement(style: str, length: int, creativity: float):
     return events, tempo, bars, key_name, source
 
 
-def _events_to_midi(events: List[dict], filename: str):
+def _midi_instrument_for(style: str, role: str):
+    inst = instrument.Instrument()
+    if style == "fast guitar":
+        inst.midiProgram = 33 if role == "bass" else (30 if role == "melody" else 29)
+    else:
+        inst.midiProgram = 0
+    return inst
+
+
+def _events_to_midi(events: List[dict], filename: str, style: str):
     score = stream.Score()
 
     for role in ("harmony", "bass", "melody"):
         part = stream.Part()
         part.id = role.title()
-        part.insert(0, instrument.Piano())
+        part.insert(0, _midi_instrument_for(style, role))
 
         for event in events:
             if event.get("role") != role:
@@ -603,12 +606,10 @@ def generate_music(style: str = "classical", length: int = 96, creativity: float
     length = max(48, min(int(length), 200))
     creativity = max(0.3, min(float(creativity), 1.6))
 
-    events, tempo, bars, key_name, source = _generate_arrangement(
-        style, length, creativity
-    )
+    events, tempo, bars, key_name, source = _generate_arrangement(style, length, creativity)
 
     filename = f"composition-{random.randint(100000, 999999)}.mid"
-    _events_to_midi(events, filename)
+    _events_to_midi(events, filename, style)
 
     return {
         "filename": filename,
