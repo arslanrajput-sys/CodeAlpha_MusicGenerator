@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+
+# Models and generated output
+models/*.keras
+models/*.h5
+models/*.json
+generated/*.mid
+generated/*.midi
+
+# Dataset
+# Keep MIDI files local; they can be large and may have their own licenses.
+data/midi/*.mid
+data/midi/*.midi
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
