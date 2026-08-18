@@ -39,33 +39,31 @@ st.markdown(
         color: var(--text);
     }
 
-    #MainMenu, footer, header {
-        visibility: hidden;
-    }
+    #MainMenu, footer, header { visibility: hidden; }
 
     .block-container {
         max-width: 880px;
-        padding-top: 3.5rem;
+        padding-top: 3rem;
         padding-bottom: 3rem;
     }
 
     .app-head {
+        max-width: 600px;
+        margin: 0 auto 2rem;
         text-align: center;
-        margin: 0 auto 2.2rem;
-        max-width: 620px;
     }
 
-    .app-head .mark {
-        width: 42px;
-        height: 42px;
-        margin: 0 auto 16px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
+    .mark {
+        width: 40px;
+        height: 40px;
         display: grid;
         place-items: center;
+        margin: 0 auto 14px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
         background: var(--surface);
-        font-size: 21px;
         color: var(--accent);
+        font-size: 20px;
     }
 
     .app-head h1 {
@@ -78,17 +76,10 @@ st.markdown(
     }
 
     .app-head p {
-        margin: 10px auto 0;
+        margin: 9px auto 0;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.6;
-    }
-
-    .small-label {
-        color: var(--muted);
-        font-size: 12px;
-        text-align: center;
-        margin-top: 8px;
     }
 
     div[data-testid="stVerticalBlockBorderWrapper"] {
@@ -111,18 +102,10 @@ st.markdown(
         border-radius: 8px !important;
     }
 
-    div[data-baseweb="popover"] {
-        background: var(--surface-2) !important;
-    }
-
-    .stSlider [data-baseweb="slider"] {
-        padding-top: 5px;
-    }
-
     .stButton > button {
         min-height: 46px;
         border-radius: 8px;
-        border: 1px solid #d9dde3;
+        border: 1px solid #e4e7eb;
         background: #f4f5f7;
         color: #111318;
         font-weight: 700;
@@ -146,25 +129,25 @@ st.markdown(
     }
 
     [data-testid="stDownloadButton"] button:hover {
-        border-color: #444b56;
+        border-color: #454c57;
         background: #22262e;
         color: #ffffff;
     }
 
     .empty-state {
-        min-height: 260px;
+        min-height: 250px;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 26px;
+        padding: 28px;
     }
 
     .empty-state strong {
         display: block;
-        font-size: 18px;
-        color: var(--text);
         margin-bottom: 7px;
+        color: var(--text);
+        font-size: 18px;
     }
 
     .empty-state span {
@@ -180,29 +163,29 @@ st.markdown(
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        margin-bottom: 18px;
+        margin-bottom: 16px;
     }
 
     .result-title {
-        font-size: 22px;
+        color: var(--text);
+        font-size: 21px;
         line-height: 1.2;
         font-weight: 700;
-        color: var(--text);
     }
 
     .result-sub {
+        margin-top: 4px;
         color: var(--muted);
         font-size: 12px;
-        margin-top: 5px;
     }
 
     .badge {
         border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 9px;
         background: var(--surface-2);
         color: #c5cbd3;
         font-size: 11px;
-        padding: 6px 9px;
-        border-radius: 999px;
         white-space: nowrap;
     }
 
@@ -214,17 +197,17 @@ st.markdown(
     }
 
     .stat {
+        padding: 11px 12px;
         border: 1px solid var(--border);
-        background: #14171c;
         border-radius: 8px;
-        padding: 12px;
+        background: #14171c;
     }
 
     .stat strong {
         display: block;
+        margin-bottom: 3px;
         color: var(--text);
         font-size: 16px;
-        margin-bottom: 3px;
     }
 
     .stat span {
@@ -243,27 +226,11 @@ st.markdown(
         font-size: 11px;
     }
 
-    [data-testid="stSpinner"] {
-        color: var(--muted) !important;
-    }
-
     @media (max-width: 720px) {
-        .block-container {
-            padding: 2rem 1rem 2.5rem;
-        }
-
-        .app-head h1 {
-            font-size: 32px;
-        }
-
-        .stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .result-top {
-            align-items: flex-start;
-            flex-direction: column;
-        }
+        .block-container { padding: 2rem 1rem 2.5rem; }
+        .app-head h1 { font-size: 32px; }
+        .stats { grid-template-columns: repeat(2, 1fr); }
+        .result-top { align-items: flex-start; flex-direction: column; }
     }
     </style>
     """,
@@ -275,7 +242,7 @@ st.markdown(
     <div class="app-head">
         <div class="mark">♪</div>
         <h1>MuseLab</h1>
-        <p>Generate a MIDI composition, preview it in your browser, and download the result.</p>
+        <p>Generate a complete MIDI arrangement with melody, harmony and bass.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -296,35 +263,30 @@ with st.container(border=True):
         length = st.slider(
             "Length",
             min_value=48,
-            max_value=200,
+            max_value=168,
             value=96,
-            step=8,
+            step=12,
         )
 
     with c3:
         creativity = st.slider(
-            "Creativity",
+            "Variation",
             min_value=0.3,
             max_value=1.6,
-            value=0.9,
+            value=0.8,
             step=0.1,
         )
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    generate_clicked = st.button(
-        "Generate music",
-        use_container_width=True,
-        type="primary",
-    )
+    generate_clicked = st.button("Generate music", use_container_width=True, type="primary")
 
 if generate_clicked:
-    with st.spinner("Generating composition..."):
+    with st.spinner("Generating arrangement..."):
         st.session_state["piece"] = generate_music(
             style=style,
             length=length,
             creativity=creativity,
         )
-        st.session_state["piece_creativity"] = creativity
 
 piece = st.session_state.get("piece")
 
@@ -337,30 +299,29 @@ with st.container(border=True):
             <div class="empty-state">
                 <div>
                     <strong>No composition yet</strong>
-                    <span>Choose your settings above and press Generate music. Your piano roll, playback controls and MIDI download will appear here.</span>
+                    <span>Choose a style and press Generate music. A complete arrangement will appear here.</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     else:
-        source_label = "Trained LSTM" if piece["source"] == "trained-lstm" else "Composition engine"
-        shown_creativity = st.session_state.get("piece_creativity", creativity)
+        source_label = "LSTM + arrangement" if piece["source"] == "trained-lstm" else "Music engine"
 
         st.markdown(
             f"""
             <div class="result-top">
                 <div>
                     <div class="result-title">{piece['style'].title()} composition</div>
-                    <div class="result-sub">Generated for this session</div>
+                    <div class="result-sub">Melody · harmony · bass</div>
                 </div>
                 <span class="badge">{source_label}</span>
             </div>
             <div class="stats">
                 <div class="stat"><strong>{piece['tempo']}</strong><span>BPM</span></div>
+                <div class="stat"><strong>{piece.get('key', '—')}</strong><span>Key</span></div>
                 <div class="stat"><strong>{piece['bars']}</strong><span>Bars</span></div>
                 <div class="stat"><strong>{len(piece['events'])}</strong><span>Events</span></div>
-                <div class="stat"><strong>{shown_creativity:.1f}</strong><span>Creativity</span></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -381,15 +342,15 @@ with st.container(border=True):
                 background: transparent;
             }}
             .player {{
+                overflow: hidden;
                 border: 1px solid #2a2f38;
                 border-radius: 8px;
-                overflow: hidden;
                 background: #111419;
             }}
             canvas {{
                 display: block;
                 width: 100%;
-                height: 180px;
+                height: 190px;
                 background: #111419;
             }}
             .controls {{
@@ -402,37 +363,35 @@ with st.container(border=True):
             }}
             button {{
                 border: 1px solid #363c46;
-                background: #20242b;
-                color: #eef1f5;
                 border-radius: 7px;
                 padding: 8px 14px;
+                background: #20242b;
+                color: #eef1f5;
                 cursor: pointer;
                 font: inherit;
                 font-size: 12px;
                 font-weight: 600;
             }}
             button.primary {{
+                border-color: #f2f4f7;
                 background: #f2f4f7;
                 color: #111318;
-                border-color: #f2f4f7;
             }}
             .note {{
                 margin-left: auto;
                 color: #7f8793;
                 font-size: 11px;
             }}
-            @media (max-width: 520px) {{
-                .note {{ display: none; }}
-            }}
+            @media (max-width: 520px) {{ .note {{ display: none; }} }}
         </style>
         </head>
         <body>
             <div class="player">
-                <canvas id="roll" width="900" height="180"></canvas>
+                <canvas id="roll" width="900" height="190"></canvas>
                 <div class="controls">
                     <button class="primary" onclick="playPiece()">Play</button>
                     <button onclick="stopPiece()">Stop</button>
-                    <span class="note">Browser preview</span>
+                    <span class="note">Layered browser preview</span>
                 </div>
             </div>
 
@@ -444,10 +403,16 @@ with st.container(border=True):
                 let audioCtx = null;
                 let active = [];
 
+                function roleColor(role) {{
+                    if (role === 'bass') return '#77829a';
+                    if (role === 'harmony') return '#68736d';
+                    return '#b8d2b0';
+                }}
+
                 function drawRoll() {{
                     const pitches = events.flatMap(e => e.pitches);
-                    const minP = Math.min(...pitches, 48);
-                    const maxP = Math.max(...pitches, 72);
+                    const minP = Math.min(...pitches, 36);
+                    const maxP = Math.max(...pitches, 84);
                     const total = Math.max(...events.map(e => e.start + e.duration), 1);
 
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -465,10 +430,10 @@ with st.container(border=True):
                     events.forEach(e => {{
                         e.pitches.forEach(p => {{
                             const x = (e.start / total) * canvas.width;
-                            const w = Math.max(4, (e.duration / total) * canvas.width - 2);
-                            const y = canvas.height - 18 - ((p - minP) / Math.max(1, maxP - minP)) * (canvas.height - 36);
-                            ctx.fillStyle = '#a9c5a0';
-                            ctx.fillRect(x, y, w, 7);
+                            const w = Math.max(3, (e.duration / total) * canvas.width - 1);
+                            const y = canvas.height - 14 - ((p - minP) / Math.max(1, maxP - minP)) * (canvas.height - 28);
+                            ctx.fillStyle = roleColor(e.role);
+                            ctx.fillRect(x, y, w, e.role === 'bass' ? 5 : 7);
                         }});
                     }});
                 }}
@@ -478,8 +443,8 @@ with st.container(border=True):
                 }}
 
                 function stopPiece() {{
-                    active.forEach(o => {{
-                        try {{ o.stop(); }} catch (e) {{}}
+                    active.forEach(node => {{
+                        try {{ node.stop(); }} catch (e) {{}}
                     }});
                     active = [];
                     if (audioCtx) {{
@@ -488,31 +453,81 @@ with st.container(border=True):
                     }}
                 }}
 
+                function scheduleVoice(event, pitch, output) {{
+                    const role = event.role || 'melody';
+                    const beat = 60 / tempo;
+                    const start = audioCtx.currentTime + 0.08 + event.start * beat;
+                    const end = start + Math.max(0.08, event.duration * beat * 0.94);
+                    const velocity = Math.max(0.45, Math.min(1.15, (event.velocity || 78) / 86));
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const filter = audioCtx.createBiquadFilter();
+
+                    if (role === 'bass') {{
+                        osc.type = 'sine';
+                        filter.type = 'lowpass';
+                        filter.frequency.value = 720;
+                    }} else if (role === 'harmony') {{
+                        osc.type = 'sine';
+                        filter.type = 'lowpass';
+                        filter.frequency.value = 1900;
+                    }} else {{
+                        osc.type = 'triangle';
+                        filter.type = 'lowpass';
+                        filter.frequency.value = 4200;
+                    }}
+
+                    osc.frequency.value = midiToFreq(pitch);
+
+                    const peak = (role === 'bass' ? 0.07 : role === 'harmony' ? 0.032 : 0.075) * velocity;
+                    const attack = role === 'harmony' ? 0.07 : 0.018;
+                    const release = role === 'harmony' ? 0.20 : 0.09;
+                    const sustainTime = Math.max(start + attack + 0.01, end - release);
+
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.exponentialRampToValueAtTime(Math.max(0.001, peak), start + attack);
+                    gain.gain.setValueAtTime(Math.max(0.001, peak * 0.72), sustainTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+                    osc.connect(gain);
+                    gain.connect(filter);
+                    filter.connect(output.master);
+                    if (role !== 'bass') filter.connect(output.delay);
+
+                    osc.start(start);
+                    osc.stop(end + 0.04);
+                    active.push(osc);
+                }}
+
                 function playPiece() {{
                     stopPiece();
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const beat = 60 / tempo;
 
-                    events.forEach(e => {{
-                        e.pitches.forEach(p => {{
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
-                            osc.type = 'triangle';
-                            osc.frequency.value = midiToFreq(p);
+                    const master = audioCtx.createGain();
+                    master.gain.value = 0.72;
 
-                            const start = audioCtx.currentTime + 0.06 + e.start * beat;
-                            const end = start + Math.max(0.08, e.duration * beat * 0.92);
+                    const compressor = audioCtx.createDynamicsCompressor();
+                    compressor.threshold.value = -18;
+                    compressor.knee.value = 18;
+                    compressor.ratio.value = 4;
+                    compressor.attack.value = 0.01;
+                    compressor.release.value = 0.18;
 
-                            gain.gain.setValueAtTime(0.0001, start);
-                            gain.gain.exponentialRampToValueAtTime(0.10, start + 0.025);
-                            gain.gain.exponentialRampToValueAtTime(0.0001, end);
+                    const delay = audioCtx.createDelay(0.5);
+                    delay.delayTime.value = 0.14;
+                    const wet = audioCtx.createGain();
+                    wet.gain.value = 0.10;
 
-                            osc.connect(gain);
-                            gain.connect(audioCtx.destination);
-                            osc.start(start);
-                            osc.stop(end + 0.03);
-                            active.push(osc);
-                        }});
+                    delay.connect(wet);
+                    wet.connect(master);
+                    master.connect(compressor);
+                    compressor.connect(audioCtx.destination);
+
+                    const output = {{ master, delay }};
+
+                    events.forEach(event => {{
+                        event.pitches.forEach(pitch => scheduleVoice(event, pitch, output));
                     }});
                 }}
 
@@ -522,7 +537,7 @@ with st.container(border=True):
         </html>
         """
 
-        components.html(player_html, height=245, scrolling=False)
+        components.html(player_html, height=255, scrolling=False)
 
         midi_path = GENERATED_DIR / piece["filename"]
         if midi_path.exists():
